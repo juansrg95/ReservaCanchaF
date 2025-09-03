@@ -1,0 +1,43 @@
+﻿# ----------------------------
+# Manejo de finales de línea
+# ----------------------------
+
+# Script Gradle para Linux/Mac debe usar LF
+/gradlew text eol=lf
+
+# Scripts de Windows usan CRLF
+*.bat text eol=crlf
+
+# Archivos de configuración en texto
+*.yml text eol=lf
+*.yaml text eol=lf
+*.properties text eol=lf
+
+# ----------------------------
+# Archivos binarios
+# ----------------------------
+*.jar binary
+*.war binary
+*.ear binary
+*.class binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+
+# ----------------------------
+# Ajustes para GitHub Linguist
+# ----------------------------
+
+# Ignorar archivos de Swagger y front estáticos
+*.html linguist-detectable=false
+*.css linguist-detectable=false
+*.js linguist-detectable=false
+*.ts linguist-detectable=false
+
+# ----------------------------
+# Forzar Java como principal
+# ----------------------------
+*.java linguist-detectable=true
