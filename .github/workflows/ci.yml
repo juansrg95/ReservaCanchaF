@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ develop, main ]
 
-# Para que Sonar comente en PRs
 permissions:
   contents: read
   pull-requests: write
@@ -14,55 +13,47 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      # 1) Checkout
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2) JDK 21
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: '21'
           cache: gradle
 
-      # 3) Hacer gradlew ejecutable (muy importante en Linux)
       - name: Make Gradle executable
         run: chmod +x gradlew
 
-      # 4) Cache de Gradle (acelera builds)
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      #  Primero pruebas + cobertura (genera el XML)
+      - name: Tests + JaCoCo
+        run: ./gradlew clean test jacocoTestReport --no-daemon
 
-      # 5) Compilar y testear
-      - name: Build & Test
-        run: ./gradlew clean build test --no-daemon
-
-      # 6) Subir reportes de tests (opcional)
-      - name: Upload test results
+      # (Opcional) Subir reportes para inspección
+      - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
-          path: build/test-results/test
+          name: reports
+          path: |
+            build/test-results/test
+            build/reports/tests/test
+            build/reports/jacoco/test
 
-      # 7) Análisis con SonarCloud (acción nueva, sin deprecaciones)
+      # Ahora sí: análisis en SonarCloud
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v2
+        uses: SonarSource/sonarcloud-github-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
+        with:
+          args: >
+            -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/jacoco/test/jacocoTestReport.xml
+            -Dsonar.junit.reportPaths=build/test-results/test
+            -Dsonar.java.binaries=build/classes/java/main
+
 
 
 
