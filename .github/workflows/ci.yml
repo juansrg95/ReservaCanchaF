@@ -30,7 +30,11 @@ jobs:
           java-version: 21
           cache: gradle
 
-      # 3) Cache de Gradle (acelera builds)
+      # 3) Dar permisos de ejecución a gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 4) Cache de Gradle (acelera builds)
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -41,15 +45,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 4) Compilar
+      # 5) Compilar
       - name: Build
         run: ./gradlew clean build --no-daemon
 
-      # 5) Ejecutar tests (si no los corre el build)
+      # 6) Ejecutar tests
       - name: Run tests
         run: ./gradlew test --no-daemon
 
-      # 6) Subir reportes de tests como artefacto (opcional)
+      # 7) Subir reportes de tests como artefacto (opcional)
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v3
@@ -57,10 +61,11 @@ jobs:
           name: test-results
           path: build/test-results/test
 
-      # 7) Análisis con SonarCloud
+      # 8) Análisis con SonarCloud
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}     # Token automático de GitHub
           SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}      # Token que creaste en Settings > Secrets
+
 
