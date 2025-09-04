@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ develop, main ]
 
-# Necesario para que SonarCloud comente y muestre resultado en PRs
+# Para que Sonar comente en PRs
 permissions:
   contents: read
   pull-requests: write
@@ -16,13 +16,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) Checkout del código
-      - name: Checkout
-        uses: actions/checkout@v4
+      # 1) Checkout
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # Recomendado por Sonar para análisis correcto
+          fetch-depth: 0
 
-      # 2) Configurar JDK 21
+      # 2) JDK 21
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -30,8 +29,8 @@ jobs:
           java-version: 21
           cache: gradle
 
-      # 3) Dar permisos de ejecución a gradlew
-      - name: Grant execute permission for gradlew
+      # 3) Hacer gradlew ejecutable (muy importante en Linux)
+      - name: Make Gradle executable
         run: chmod +x gradlew
 
       # 4) Cache de Gradle (acelera builds)
@@ -45,15 +44,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # 5) Compilar
-      - name: Build
-        run: ./gradlew clean build --no-daemon
+      # 5) Compilar y testear
+      - name: Build & Test
+        run: ./gradlew clean build test --no-daemon
 
-      # 6) Ejecutar tests
-      - name: Run tests
-        run: ./gradlew test --no-daemon
-
-      # 7) Subir reportes de tests como artefacto (opcional)
+      # 6) Subir reportes de tests (opcional)
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -61,11 +56,14 @@ jobs:
           name: test-results
           path: build/test-results/test
 
-      # 8) Análisis con SonarCloud
+      # 7) Análisis con SonarCloud (acción nueva, sin deprecaciones)
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}     # Token automático de GitHub
-          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}      # Token que creaste en Settings > Secrets
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+
 
 
