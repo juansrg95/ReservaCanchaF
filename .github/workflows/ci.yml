@@ -66,6 +66,6 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}     # Token automático de GitHub
-          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}      # Token que creaste en Settings > Secrets
+          SONAR_TOKEN:  ${{ secrets.sonar-token }}      # Token que creaste en Settings > Secrets
 
 
