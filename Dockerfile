@@ -6,30 +6,31 @@ WORKDIR /workspace
 COPY build.gradle settings.gradle gradlew ./
 COPY gradle gradle/
 
-# FIX: convertir CRLF a LF y dar permisos de ejecución
+# Arreglamos EOL y permisos para gradlew
 RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 
-# Descargamos dependencias (cachea)
+# Descargamos dependencias (capa caché)
 RUN ./gradlew dependencies --no-daemon || true
 
-# Copiamos el resto del código
+# Ahora copiamos TODO el código (esto pisa gradlew otra vez)
 COPY . .
 
-# Construimos el jar ejecutable
+# VOLVEMOS a arreglar gradlew porque COPY . . lo sobrescribe
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
+
+# Construimos el jar
 RUN ./gradlew clean bootJar --no-daemon
 
 # ===== Etapa 2: Runtime mínimo (JRE 21) =====
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Copiamos el JAR desde el builder
+# Copiamos el jar construido
 COPY --from=builder /workspace/build/libs/*.jar app.jar
 
-# Puerto de Spring Boot
 EXPOSE 8080
-
-# Variables opcionales (se pueden sobrescribir con -e)
 ENV JAVA_OPTS=""
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
+
 
