@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16
+    container_name: reservas-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reservas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: S3b4st14n
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: reservas-api
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/reservas
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: S3b4st14n
+      # Opcional: logs y zona horaria
+      TZ: America/Bogota
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

@@ -3,7 +3,9 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.3.2'
     id 'io.spring.dependency-management' version '1.1.5'
-    id 'jacoco' // <— añadido para cobertura
+    id 'jacoco'
+    id 'org.sonarqube' version '4.4.1.3373'
+    id 'org.flywaydb.flyway' version '10.10.0'
 }
 
 group = 'com.reserva.cancha'
@@ -21,23 +23,30 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'  // útil para DTOs
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
     runtimeOnly 'org.postgresql:postgresql'
+
+
 
     // Swagger/OpenAPI
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
 
     // Lombok
-    compileOnly 'org.projectlombok:lombok:1.18.36'
-    annotationProcessor 'org.projectlombok:lombok:1.18.36'
-    testCompileOnly 'org.projectlombok:lombok:1.18.36'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.36'
+    compileOnly 'org.projectlombok:lombok:1.18.32'
+    annotationProcessor 'org.projectlombok:lombok:1.18.32'
+    testCompileOnly 'org.projectlombok:lombok:1.18.32'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.32'
 
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'com.h2database:h2'
+    testImplementation 'org.springframework.security:spring-security-test'
+
 }
 
 tasks.named('test') {
@@ -45,10 +54,36 @@ tasks.named('test') {
     finalizedBy tasks.named('jacocoTestReport') // genera reporte después de los tests
 }
 
+jacoco {
+    toolVersion = "0.8.11"
+}
+
 jacocoTestReport {
     dependsOn test
     reports {
-        xml.required = true   // SonarCloud necesita este XML
-        html.required = true  // opcional, puedes abrirlo en navegador
+        // Sintaxis compatible con Gradle 8
+        xml.required.set(true)   // SonarCloud usa este XML
+        html.required.set(true)  // útil para abrir en navegador
     }
 }
+
+// Config SonarCloud (ajusta organization/projectKey si cambia)
+sonarqube {
+    properties {
+        property "sonar.projectKey", "juansrg95_ReservaCanchaF"
+        property "sonar.organization", "juansrg95"
+        property "sonar.host.url", "https://sonarcloud.io"
+
+        // Dile a Sonar dónde están binarios y reportes
+        property "sonar.java.binaries", "build/classes/java/main"
+        property "sonar.junit.reportPaths", "build/test-results/test"
+        property "sonar.coverage.jacoco.xmlReportPaths", "build/reports/jacoco/test/jacocoTestReport.xml"
+
+        // Evita compilación implícita (silencia el warning)
+        property "sonar.gradle.skipCompile", "true"
+
+        // (Opcional) exclusiones
+        property "sonar.exclusions", "**/generated/**,**/*Config*.java"
+    }
+}
+

@@ -1,7 +1,9 @@
-
 spring:
+  flyway:
+    enabled: false          # Desactiva Flyway SOLO en tests
   datasource:
-    url: jdbc:h2:mem:reservas;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
     username: sa
     password:
   jpa:
@@ -9,5 +11,6 @@ spring:
       ddl-auto: none
     properties:
       hibernate.dialect: org.hibernate.dialect.H2Dialect
-  flyway:
-    enabled: false
+
+
+
