@@ -7,7 +7,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class HealthController {
 
     @GetMapping("/health")
-    public String healthCheck() {
-        return "Backend OK - Rama feature-juanruizg";
+    public String health() {
+        return "Backend OK";
     }
 }
+
