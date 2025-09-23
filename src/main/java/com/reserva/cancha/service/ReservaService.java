@@ -1,14 +1,18 @@
 
 package com.reserva.cancha.service;
 
-import com.reserva.cancha.dto.ReservaDTO;
-import com.reserva.cancha.model.Reserva;
+import com.reserva.cancha.dto.ReservaRequest;
+import com.reserva.cancha.dto.ReservaResponse;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface ReservaService {
-    Reserva crear(ReservaDTO dto);
-    void cancelar(Long id);
-    List<Reserva> ocupadas(Long canchaId, Instant desde, Instant hasta);
+    List<ReservaResponse> listar(Optional<Long> canchaId, Optional<LocalDateTime> desde, Optional<LocalDateTime> hasta);
+
+    ReservaResponse crear(ReservaRequest request);
+
+    void eliminar(Long id, String solicitanteUsername, boolean solicitanteEsAdmin);
 }
+
