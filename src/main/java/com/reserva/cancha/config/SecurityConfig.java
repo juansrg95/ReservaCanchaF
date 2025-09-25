@@ -1,4 +1,3 @@
-
 package com.reserva.cancha.config;
 
 import org.springframework.context.annotation.Bean;
@@ -17,24 +16,31 @@ public class SecurityConfig {
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults()) // usa CorsConfig
+                .cors(Customizer.withDefaults())          // usa el GlobalCorsFilter
                 .httpBasic(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // <— clave para CORS
+                        // ✅ MUY IMPORTANTE: permitir preflight CORS
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // Públicos
                         .requestMatchers("/health", "/actuator/health").permitAll()
                         .requestMatchers("/actuator/**", "/error").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
+                        // Canchas
                         .requestMatchers(HttpMethod.GET, "/api/canchas/**").permitAll()
                         .requestMatchers(HttpMethod.POST,   "/api/canchas/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT,    "/api/canchas/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH,  "/api/canchas/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/canchas/**").hasRole("ADMIN")
 
+                        // Reservas
                         .requestMatchers("/api/reservas/**").hasAnyRole("USER","ADMIN")
+
+                        // Usuarios
                         .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
 
+                        // Resto
                         .anyRequest().authenticated()
                 );
 
