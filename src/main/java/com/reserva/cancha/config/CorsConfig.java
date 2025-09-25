@@ -15,11 +15,17 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
 
-        // Opción rápida: todo abierto
-        cfg.setAllowedOriginPatterns(List.of("*"));  // en Spring Security 6 se usa esto en lugar de setAllowedOrigins
-        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        cfg.setAllowedHeaders(List.of("*")); // acepta todos los headers
-        cfg.setAllowCredentials(false);       // como estás con BasicAuth, no necesitas cookies
+        // Permite localhost/127.0.0.1 en cualquier puerto (útil para Flutter web)
+        cfg.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*"
+                // agrega aquí otro origen si vas a servir front desde otra IP/host, p.ej.:
+                // "http://75.101.224.153:*"
+        ));
+        cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
+        cfg.setAllowedHeaders(List.of("*"));                     // Authorization, Content-Type, etc.
+        cfg.setExposedHeaders(List.of("Authorization"));
+        cfg.setAllowCredentials(false);                          // sin cookies en dev
         cfg.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -27,5 +33,6 @@ public class CorsConfig {
         return source;
     }
 }
+
 
 
