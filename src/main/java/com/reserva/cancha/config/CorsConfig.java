@@ -8,27 +8,18 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * CORS para Flutter Web (localhost) y tu IP pública.
- */
 @Configuration
 public class CorsConfig {
 
     @Bean
-    CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
 
-        cfg.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:5273",
-                "http://localhost:54872",
-                "http://localhost:*",               // cualquier puerto local
-                "http://75.101.224.153:8081",       // tu backend
-                "http://75.101.224.153:8080"
-        ));
-        cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        cfg.setAllowedHeaders(List.of("Authorization","Content-Type","Accept","Origin"));
-        cfg.setAllowCredentials(false);            // estamos con Basic Auth, sin cookies
+        // Opción rápida: todo abierto
+        cfg.setAllowedOriginPatterns(List.of("*"));  // en Spring Security 6 se usa esto en lugar de setAllowedOrigins
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        cfg.setAllowedHeaders(List.of("*")); // acepta todos los headers
+        cfg.setAllowCredentials(false);       // como estás con BasicAuth, no necesitas cookies
         cfg.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -36,6 +27,5 @@ public class CorsConfig {
         return source;
     }
 }
-
 
 

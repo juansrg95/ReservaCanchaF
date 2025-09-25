@@ -15,14 +15,13 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Para API sin sesiones/formularios
-                .csrf(csrf -> csrf.disable())
-                // Habilita CORS (se toma del CorsConfig de abajo)
-                .cors(Customizer.withDefaults())
-                // Auth básica
-                .httpBasic(Customizer.withDefaults())
-                // Autorización por rutas
+                .csrf(csrf -> csrf.disable()) // desactivar CSRF
+                .cors(Customizer.withDefaults()) // usar la config de CorsConfig
+                .httpBasic(Customizer.withDefaults()) // Basic Auth
                 .authorizeHttpRequests(auth -> auth
+                        // ⚠️ Importante: permitir OPTIONS (preflight)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         // Salud / Swagger públicos
                         .requestMatchers("/health", "/actuator/health").permitAll()
                         .requestMatchers("/actuator/**", "/error").permitAll()
@@ -41,7 +40,7 @@ public class SecurityConfig {
                         // Usuarios: solo ADMIN
                         .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
 
-                        // Cualquier otra
+                        // Cualquier otra request → autenticada
                         .anyRequest().authenticated()
                 );
 
