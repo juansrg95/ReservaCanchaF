@@ -22,6 +22,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/health", "/actuator/health").permitAll()
                         .requestMatchers("/actuator/**", "/error").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/disponibilidad").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/canchas/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST,   "/api/canchas/**").hasRole("ADMIN")
