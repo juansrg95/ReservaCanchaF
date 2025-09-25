@@ -16,33 +16,23 @@ public class SecurityConfig {
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults())          // usa el GlobalCorsFilter
-                .httpBasic(Customizer.withDefaults())
+                .cors(c -> {})   // usa el CorsConfigurationSource de arriba
+                .httpBasic(c -> {})
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ MUY IMPORTANTE: permitir preflight CORS
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                        // Públicos
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/health", "/actuator/health").permitAll()
                         .requestMatchers("/actuator/**", "/error").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-
-                        // Canchas
-                        .requestMatchers(HttpMethod.GET, "/api/canchas/**").permitAll()
-                        .requestMatchers(HttpMethod.POST,   "/api/canchas/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT,    "/api/canchas/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH,  "/api/canchas/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/canchas/**").hasRole("ADMIN")
-
-                        // Reservas
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/canchas/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST,   "/api/canchas/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT,    "/api/canchas/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PATCH,  "/api/canchas/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/canchas/**").hasRole("ADMIN")
                         .requestMatchers("/api/reservas/**").hasAnyRole("USER","ADMIN")
-
-                        // Usuarios
                         .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
-
-                        // Resto
                         .anyRequest().authenticated()
                 );
+
 
         return http.build();
     }
