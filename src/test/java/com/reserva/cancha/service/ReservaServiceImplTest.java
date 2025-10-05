@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -33,38 +34,41 @@ class ReservaServiceImplTest {
     @InjectMocks private ReservaServiceImpl reservaService;
 
     private LocalDateTime t0, t1;
-    private Cancha cancha;
+
+    // Método para asignar valores a campos privados sin usar setters
+    private static void setField(Object target, String fieldName, Object value) {
+        try {
+            Field f = target.getClass().getDeclaredField(fieldName);
+            f.setAccessible(true);
+            f.set(target, value);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @BeforeEach
     void setup() {
-        t0 = LocalDateTime.of(2025, 9, 7, 10, 0);
-        t1 = LocalDateTime.of(2025, 9, 7, 11, 0);
+        t0 = LocalDateTime.of(2025, 9, 7, 10, 0); // 10:00
+        t1 = LocalDateTime.of(2025, 9, 7, 11, 0); // 11:00
 
-        cancha = new Cancha();
-        cancha.setId(1L);
-        cancha.setNombre("Cancha 1");
-
-        // Cancha existe
+        // Crear cancha sin setters (usando reflexión)
+        Cancha cancha = new Cancha();
+        setField(cancha, "id", 1L);
+        setField(cancha, "nombre", "Cancha 1");
         when(canchaRepository.findById(1L)).thenReturn(Optional.of(cancha));
 
-        // Usuario válido (tu servicio hace findByUsername(...).isPresent())
+        // Crear usuario sin setters (usando reflexión)
         Usuario u = new Usuario();
-        u.setUsername("juan");
+        setField(u, "username", "juan");
         when(usuarioRepository.findByUsername("juan")).thenReturn(Optional.of(u));
 
-        // save (lenient porque no se usa en el test de solape)
-        lenient().when(reservaRepository.save(any(Reserva.class))).thenAnswer(inv -> {
-            Reserva r = inv.getArgument(0);
-            if (r.getId() == null) r.setId(99L);
-            return r;
-        });
+        // Guardado lenient para evitar errores de Mockito
+        lenient().when(reservaRepository.save(any(Reserva.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @Test
     void crear_ok_cuandoNoHaySolape() {
-        // El servicio consulta reservaRepository.existeChoque(...): devolvemos false
-        when(reservaRepository.existeChoque(
-                eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(reservaRepository.existeChoque(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(false);
 
         ReservaRequest req = new ReservaRequest();
@@ -79,9 +83,7 @@ class ReservaServiceImplTest {
 
     @Test
     void crear_falla_cuandoHaySolape() {
-        // Para provocar la excepción: existeChoque = true
-        when(reservaRepository.existeChoque(
-                eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(reservaRepository.existeChoque(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(true);
 
         ReservaRequest req = new ReservaRequest();
@@ -93,7 +95,26 @@ class ReservaServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> reservaService.crear(req));
         verify(reservaRepository, never()).save(any(Reserva.class));
     }
+
+    @Test
+    void crear_pasa_cuandoEsContigua_noHaySolape() {
+        // 11:00–12:00 contiguo a 10:00–11:00 → NO debe considerarse solape
+        when(reservaRepository.existeChoque(eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(false);
+
+        ReservaRequest req = new ReservaRequest();
+        req.setCanchaId(1L);
+        req.setUsuario("juan");
+        req.setInicio(t1);            // 11:00
+        req.setFin(t1.plusHours(1));  // 12:00
+
+        assertDoesNotThrow(() -> reservaService.crear(req));
+        verify(reservaRepository, times(1)).save(any(Reserva.class));
+    }
 }
+
+
+
 
 
 

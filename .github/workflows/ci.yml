@@ -1,6 +1,8 @@
 name: CI-CD
 
 on:
+  #  Dispara el workflow en cada push a develop,
+  # y también en cada PR hacia develop o main
   push:
     branches: [ develop ]
   pull_request:
@@ -10,6 +12,7 @@ permissions:
   contents: read
   pull-requests: write
 
+#  Evita que se acumulen jobs viejos (cancela si hay uno nuevo)
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -19,13 +22,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout con historial completo
+      # 1) Trae todo el repo con historial completo
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Instalo JDK 21 (Temurin) y activo cache de Gradle
+      # 2) Instala JDK 21 (Temurin) y habilita cache de Gradle
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -33,15 +36,15 @@ jobs:
           java-version: '21'
           cache: gradle
 
-      # Permisos al wrapper
+      # 3) Da permisos de ejecución al wrapper Gradle
       - name: Gradle permissions
         run: chmod +x gradlew
 
-      # --- CI: tests + cobertura ---
+      # 4) Ejecuta los tests unitarios y genera reporte de cobertura
       - name: Unit tests + coverage (JaCoCo)
         run: ./gradlew clean test jacocoTestReport --no-daemon
 
-      # Subo reportes como artefactos
+      # 5) Sube los reportes (tests y cobertura) como artefactos
       - name: Upload test & coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -52,7 +55,7 @@ jobs:
             build/reports/tests/test
             build/reports/jacoco/test
 
-      # Análisis en SonarCloud
+      # 6) Análisis estático en SonarCloud
       - name: SonarCloud
         uses: SonarSource/sonarcloud-github-action@v2
         env:
@@ -68,12 +71,13 @@ jobs:
             -Dsonar.junit.reportPaths=build/test-results/test
             -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/jacoco/test/jacocoTestReport.xml
 
-      # --- CD: solo en develop ---
+      # --- CD: estos pasos solo corren en develop ---
+      #  7) Compila el JAR final (sin tests, porque ya corrieron antes)
       - name: Build JAR (release)
         if: github.ref == 'refs/heads/develop'
         run: ./gradlew clean build -x test --no-daemon
 
-      # Tomo la ruta del JAR generado (no el -plain)
+      # 8) Detecta el JAR generado (ignora los *-plain.jar)
       - name: Pick built JAR
         if: github.ref == 'refs/heads/develop'
         id: jar
@@ -81,7 +85,7 @@ jobs:
           echo "jarfile=$(ls -1 build/libs/*.jar | grep -v '\-plain\.jar' | head -n 1)" >> $GITHUB_OUTPUT
           echo "Picked ${{ steps.jar.outputs.jarfile }}"
 
-      # Copio el JAR a la EC2 (appleboy espera que target sea directorio)
+      # 9) Copia el JAR a la instancia EC2, en /opt/reservacancha
       - name: Upload JAR to EC2
         if: github.ref == 'refs/heads/develop'
         uses: appleboy/scp-action@v0.1.7
@@ -92,7 +96,27 @@ jobs:
           source: ${{ steps.jar.outputs.jarfile }}
           target: /opt/reservacancha
 
-      # Renombro a app.jar y reinicio el servicio
+      # 10) Blindaje: asegura que el servicio systemd use /opt/reservacancha/app.jar
+      # (si encuentra /home/ec2-user/app.jar lo corrige automáticamente)
+      - name: Ensure service unit points to /opt/reservacancha/app.jar
+        if: github.ref == 'refs/heads/develop'
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            FILE=/etc/systemd/system/reservacancha.service
+            if grep -q '/home/ec2-user/app.jar' "$FILE"; then
+              sudo sed -i 's|/home/ec2-user/app.jar|/opt/reservacancha/app.jar|' "$FILE"
+              sudo grep -q '^WorkingDirectory=' "$FILE" || \
+                sudo sed -i '/^\[Service\]/a WorkingDirectory=/opt/reservacancha' "$FILE"
+              sudo systemctl daemon-reload
+            fi
+            sudo systemctl enable reservacancha || true
+
+      # 11) Renombra el último JAR a app.jar y reinicia el servicio en EC2
       - name: Restart service on EC2
         if: github.ref == 'refs/heads/develop'
         uses: appleboy/ssh-action@v0.1.10
@@ -104,15 +128,15 @@ jobs:
             set -e
             LATEST_JAR=$(ls -1t /opt/reservacancha/*.jar | head -n 1)
             sudo mv "$LATEST_JAR" /opt/reservacancha/app.jar
-            sudo systemctl daemon-reload
             sudo systemctl restart reservacancha
             sudo systemctl status reservacancha --no-pager || true
 
-      # Smoke tests post-deploy
+      # 12) Smoke test: valida que el servicio responde en /health
       - name: "Smoke test: /health"
         if: github.ref == 'refs/heads/develop'
         run: curl -sS -I http://${{ secrets.EC2_HOST }}:8080/health | head -n 1
 
+      # 13) Smoke test: valida que la API publica OpenAPI docs
       - name: "Smoke test: OpenAPI"
         if: github.ref == 'refs/heads/develop'
         run: curl -sS -I http://${{ secrets.EC2_HOST }}:8080/v3/api-docs | head -n 1

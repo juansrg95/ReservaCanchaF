@@ -27,17 +27,19 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
     /**
      * ¿Existe choque de horario en la misma cancha?
      * (nuevo.inicio < existente.fin) AND (nuevo.fin > existente.inicio)
+     *
+     * ⚙️ Versión JPQL: compatible con PostgreSQL y H2 (para tests)
      */
-    @Query(value = """
-            SELECT CASE WHEN COUNT(r) > 0 THEN TRUE ELSE FALSE END
-            FROM reserva r
-            WHERE r.cancha_id = :canchaId
-              AND :inicio < r.fin
-              AND :fin > r.inicio
-            """,
-            nativeQuery = true)
+    @Query("""
+            SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END
+            FROM Reserva r
+            WHERE r.cancha.id = :canchaId
+              AND (:inicio < r.fin AND :fin > r.inicio)
+            """)
     boolean existeChoque(@Param("canchaId") Long canchaId,
                          @Param("inicio") LocalDateTime inicio,
                          @Param("fin") LocalDateTime fin);
 }
+
+
 

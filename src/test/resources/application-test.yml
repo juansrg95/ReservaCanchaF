@@ -1,6 +1,6 @@
 spring:
   flyway:
-    enabled: false          # Desactiva Flyway SOLO en tests
+    enabled: false   # Desactiva Flyway SOLO en los tests
   datasource:
     url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driverClassName: org.h2.Driver
@@ -8,9 +8,10 @@ spring:
     password:
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: create-drop   # Crea y elimina el esquema solo en los tests
     properties:
       hibernate.dialect: org.hibernate.dialect.H2Dialect
+
 
 
 
