@@ -3,10 +3,13 @@
 # ----------------------------
 
 # Script Gradle para Linux/Mac debe usar LF
-/gradlew text eol=lf
+gradlew text eol=lf
 
 # Scripts de Windows usan CRLF
 *.bat text eol=crlf
+
+# Scripts shell (si los hubiera)
+*.sh text eol=lf
 
 # Archivos de configuración en texto
 *.yml text eol=lf
@@ -41,3 +44,4 @@
 # Forzar Java como principal
 # ----------------------------
 *.java linguist-detectable=true
+
